@@ -191,7 +191,7 @@ Re-test
 
 ## Product Backlog
 
-![Backlog]<img width="1408" height="881" alt="01-product-backlog" src="https://github.com/user-attachments/assets/2bfe7260-471c-484e-9d38-49ee3f91902c" />
+![Backlog](<img width="1408" height="881" alt="01-product-backlog" src="https://github.com/user-attachments/assets/2bfe7260-471c-484e-9d38-49ee3f91902c" />)
 
 
 ---
