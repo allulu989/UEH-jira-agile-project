@@ -1,5 +1,3 @@
-<img width="1408" height="881" alt="01-product-backlog" src="https://github.com/user-attachments/assets/f4042aea-d321-4956-8f9c-fca1b100c5ba" /># 🎓 University Events Hub
-
 > A complete Agile Scrum project created in Jira to simulate a real-world software development lifecycle from Business Analysis through Sprint Planning, Quality Assurance, and Defect Tracking.
 
 ![Jira](https://img.shields.io/badge/Jira-Software-blue?logo=jira)
