@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>University Events Hub — MVP Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          display: ['Sora', 'system-ui', 'sans-serif'],
+          serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        },
+        colors: {
+          brand: {
+            50:'#EEF5FA',100:'#D5EAF4',200:'#BBDCEC',300:'#8FC2DC',
+            400:'#5BA0C8',500:'#2E7DA8',600:'#23688F',700:'#1C5879',
+            800:'#16486B',900:'#0F3450'
+          },
+          gold: { 400:'#E8C078', 500:'#D6A24A', 600:'#B98430' }
+        },
+        boxShadow: {
+          soft: '0 1px 2px rgba(16,72,107,.04), 0 8px 24px -8px rgba(16,72,107,.12)',
+          lift: '0 10px 40px -12px rgba(16,72,107,.28)',
+        },
+        keyframes: {
+          scanline: { '0%':{top:'8%'}, '100%':{top:'92%'} },
+          floaty: { '0%,100%':{transform:'translateY(0)'}, '50%':{transform:'translateY(-8px)'} },
+          pop: { '0%':{transform:'scale(.6)',opacity:'0'}, '70%':{transform:'scale(1.08)'}, '100%':{transform:'scale(1)',opacity:'1'} },
+          fadeup: { '0%':{opacity:'0',transform:'translateY(10px)'}, '100%':{opacity:'1',transform:'translateY(0)'} },
+        },
+        animation: {
+          scanline: 'scanline 1.4s ease-in-out infinite alternate',
+          floaty: 'floaty 6s ease-in-out infinite',
+          pop: 'pop .5s cubic-bezier(.2,.8,.2,1) both',
+          fadeup: 'fadeup .5s ease both',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: Inter, system-ui, sans-serif; background:
+     radial-gradient(1200px 600px at 80% -10%, #D5EAF4 0%, transparent 60%),
+     radial-gradient(900px 500px at -10% 110%, #E7F1F8 0%, transparent 55%), #F4F8FB; }
+  ::selection { background: #BBDCEC; }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
+  .route-enter { animation: fadeup .45s ease both; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+ 
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo } = React;
+ 
+/* ----------------------------------------------------------------------- *
+ *  Icons (inline SVG so the prototype has zero icon dependencies)
+ * ----------------------------------------------------------------------- */
+const I = ({d, size=20, sw=1.8, fill='none', cls=''}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor"
+    strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" className={cls}>{d}</svg>
+);
+const Icon = {
+  cap:    p=><I {...p} d={<><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/><path d="M22 10v6"/></>}/>,
+  search: p=><I {...p} d={<><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></>}/>,
+  calendar:p=><I {...p} d={<><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></>}/>,
+  pin:    p=><I {...p} d={<><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>}/>,
+  users:  p=><I {...p} d={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11"/></>}/>,
+  ticket: p=><I {...p} d={<><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M13 6v2M13 16v-2"/></>}/>,
+  qr:     p=><I {...p} d={<><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h.01"/></>}/>,
+  award:  p=><I {...p} d={<><circle cx="12" cy="8" r="6"/><path d="M8.2 13.4 7 22l5-3 5 3-1.2-8.6"/></>}/>,
+  check:  p=><I {...p} d={<path d="M20 6 9 17l-5-5"/>}/>,
+  arrow:  p=><I {...p} d={<><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>}/>,
+  back:   p=><I {...p} d={<><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></>}/>,
+  logout: p=><I {...p} d={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></>}/>,
+  mail:   p=><I {...p} d={<><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-10 6L2 7"/></>}/>,
+  lock:   p=><I {...p} d={<><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>}/>,
+  user:   p=><I {...p} d={<><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>}/>,
+  spark:  p=><I {...p} d={<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M18 18l-2.5-2.5M6 18l2.5-2.5M18 6l-2.5 2.5"/>}/>,
+  clock:  p=><I {...p} d={<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>}/>,
+  x:      p=><I {...p} d={<><path d="M18 6 6 18M6 6l12 12"/></>}/>,
+  trash:  p=><I {...p} d={<><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></>}/>,
+  download:p=><I {...p} d={<><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></>}/>,
+  shield: p=><I {...p} d={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></>}/>,
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Mock data — campus events (Sprint 1 uses local mock data only)
+ * ----------------------------------------------------------------------- */
+const today = new Date();
+const addDays = n => { const d = new Date(today); d.setDate(d.getDate()+n); d.setHours(0,0,0,0); return d; };
+const CATS = ['Technology','Career','Sports','Arts','Entrepreneurship','Workshop','Community'];
+const catTone = {
+  Technology:'bg-brand-100 text-brand-700', Career:'bg-amber-100 text-amber-700',
+  Sports:'bg-emerald-100 text-emerald-700', Arts:'bg-fuchsia-100 text-fuchsia-700',
+  Entrepreneurship:'bg-orange-100 text-orange-700', Workshop:'bg-violet-100 text-violet-700',
+  Community:'bg-rose-100 text-rose-700',
+};
+const SEED = [
+  { id:'e1', title:'AI & Robotics Summit', cat:'Technology', off:6, time:'10:00 AM',
+    loc:'College of Engineering — Auditorium A', total:120, taken:84, emoji:'🤖',
+    desc:'A full-day summit on applied AI and robotics, featuring student demos, faculty keynotes, and a hands-on robotics arena. Network with research labs and industry mentors.' },
+  { id:'e2', title:'Career Fair 2026', cat:'Career', off:3, time:'9:00 AM',
+    loc:'Main Hall — Building C', total:300, taken:191, emoji:'💼',
+    desc:'Meet 40+ employers hiring interns and graduates. Bring your CV, attend on-the-spot interviews, and join CV-review clinics run by the careers office.' },
+  { id:'e3', title:'Inter-College Sports Day', cat:'Sports', off:10, time:'4:00 PM',
+    loc:'University Stadium', total:500, taken:212, emoji:'🏟️',
+    desc:'Cheer on your college in football, basketball, and track finals. Food trucks, a fan zone, and the closing awards ceremony round out the evening.' },
+  { id:'e4', title:'Art & Design Expo', cat:'Arts', off:14, time:'1:00 PM',
+    loc:'Arts Building — Gallery 2', total:90, taken:33, emoji:'🎨',
+    desc:'A curated showcase of student work across illustration, product design, and digital media, with live portfolio reviews from visiting designers.' },
+  { id:'e5', title:'Startup Pitch Night', cat:'Entrepreneurship', off:20, time:'6:30 PM',
+    loc:'Innovation Center — Stage', total:150, taken:150, emoji:'🚀',
+    desc:'Ten student teams pitch to a panel of investors and founders. Watch live, vote for the audience favorite, and stay for the founder mixer.' },
+  { id:'e6', title:'Data Science Workshop', cat:'Workshop', off:9, time:'11:00 AM',
+    loc:'Computer Lab 3', total:40, taken:31, emoji:'📊',
+    desc:'A practical, laptop-required workshop on data wrangling and visualization. Leave with a notebook of techniques you can reuse in your projects.' },
+  { id:'e7', title:'Cultural Heritage Festival', cat:'Community', off:25, time:'5:00 PM',
+    loc:'Central Plaza', total:400, taken:120, emoji:'🎭',
+    desc:'Celebrate the cultures across campus with food stalls, music, and craft booths run by student societies. Open to all students and their guests.' },
+  { id:'e8', title:'Leadership Bootcamp', cat:'Career', off:17, time:'9:30 AM',
+    loc:'Seminar Room A', total:50, taken:18, emoji:'🧭',
+    desc:'An interactive bootcamp on communication, teamwork, and decision-making, with group challenges and a certificate of participation on completion.' },
+];
+ 
+/* ----------------------------------------------------------------------- *
+ *  Small helpers
+ * ----------------------------------------------------------------------- */
+const fmtDate = d => d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const fmtLong = d => d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const isUniEmail = e => /^[^\s@]+@[^\s@]+\.(edu(\.[a-z]{2,})?|ac\.[a-z]{2,})$/i.test(e.trim());
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+const titleCase = s => s.replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const nameFromEmail = e => titleCase(e.split('@')[0]);
+const certId = () => 'UEH-'+today.getFullYear()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+ 
+/* ----------------------------------------------------------------------- *
+ *  UI primitives
+ * ----------------------------------------------------------------------- */
+const Btn = ({children, onClick, variant='primary', size='md', className='', type='button', disabled, loading}) => {
+  const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 disabled:opacity-50 disabled:cursor-not-allowed';
+  const sizes = { sm:'text-sm px-3.5 py-2', md:'text-[15px] px-5 py-2.5', lg:'text-base px-6 py-3.5' };
+  const variants = {
+    primary:'bg-brand-700 text-white hover:bg-brand-800 shadow-soft hover:shadow-lift',
+    gold:'bg-gradient-to-br from-gold-500 to-gold-600 text-white hover:brightness-105 shadow-soft',
+    soft:'bg-brand-50 text-brand-700 hover:bg-brand-100',
+    ghost:'text-brand-700 hover:bg-brand-50',
+    outline:'border border-brand-200 text-brand-700 bg-white hover:border-brand-400 hover:bg-brand-50',
+    danger:'bg-white text-rose-600 border border-rose-200 hover:bg-rose-50',
+  };
+  return (
+    <button type={type} onClick={onClick} disabled={disabled||loading}
+      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}>
+      {loading && <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>}
+      {children}
+    </button>
+  );
+};
+ 
+const Pill = ({cat}) => <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${catTone[cat]||'bg-slate-100 text-slate-600'}`}>{cat}</span>;
+ 
+const Seats = ({taken,total,compact}) => {
+  const left = Math.max(total-taken,0);
+  const pct = Math.min(100, Math.round(taken/total*100));
+  const full = left===0;
+  const tone = full ? 'bg-rose-500' : pct>85 ? 'bg-amber-500' : 'bg-brand-500';
+  return (
+    <div className={compact?'':'space-y-1.5'}>
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className={full?'text-rose-600':'text-slate-500'}>{full?'Fully booked':`${left} seats left`}</span>
+        {!compact && <span className="text-slate-400">{taken}/{total}</span>}
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+        <div className={`h-full rounded-full ${tone} transition-all`} style={{width:pct+'%'}}/>
+      </div>
+    </div>
+  );
+};
+ 
+const Field = ({label, icon, error, hint, ok, ...props}) => (
+  <label className="block">
+    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className="mt-1.5 relative">
+      {icon && <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
+      <input {...props}
+        className={`w-full ${icon?'pl-11':'pl-4'} pr-10 py-3 rounded-xl border bg-white text-slate-800 placeholder:text-slate-400
+        focus:outline-none focus:ring-4 transition
+        ${error?'border-rose-300 focus:ring-rose-100':'border-slate-200 focus:border-brand-400 focus:ring-brand-100'}`}/>
+      {ok && <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500"><Icon.check size={18}/></span>}
+    </div>
+    {error ? <p className="mt-1.5 text-xs text-rose-600">{error}</p>
+           : hint ? <p className="mt-1.5 text-xs text-slate-400">{hint}</p> : null}
+  </label>
+);
+ 
+/* Toasts ----------------------------------------------------------------- */
+const ToastHost = ({toasts, dismiss}) => (
+  <div className="fixed z-50 bottom-5 left-1/2 -translate-x-1/2 w-[92%] max-w-sm space-y-2">
+    {toasts.map(t=>(
+      <div key={t.id} className="route-enter flex items-start gap-3 bg-white border border-slate-100 shadow-lift rounded-2xl px-4 py-3">
+        <span className={`mt-0.5 ${t.tone==='error'?'text-rose-500':'text-emerald-500'}`}>
+          {t.tone==='error'?<Icon.x size={18}/>:<Icon.check size={18}/>}
+        </span>
+        <p className="text-sm text-slate-700 flex-1">{t.msg}</p>
+        <button onClick={()=>dismiss(t.id)} className="text-slate-300 hover:text-slate-500"><Icon.x size={16}/></button>
+      </div>
+    ))}
+  </div>
+);
+ 
+/* ----------------------------------------------------------------------- *
+ *  Brand mark + chrome
+ * ----------------------------------------------------------------------- */
+const Logo = ({light}) => (
+  <div className="flex items-center gap-2.5">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white grid place-items-center shadow-soft">
+      <Icon.cap size={20}/>
+    </div>
+    <div className="leading-tight">
+      <div className={`font-display font-bold text-[15px] ${light?'text-white':'text-brand-800'}`}>University Events Hub</div>
+      <div className={`text-[10px] tracking-wide uppercase ${light?'text-brand-100':'text-slate-400'}`}>Campus life, one tap away</div>
+    </div>
+  </div>
+);
+ 
+const Navbar = ({user, route, go, regCount, logout}) => {
+  const link = (key,label,badge)=>(
+    <button onClick={()=>go(key)}
+      className={`relative px-3.5 py-2 rounded-lg text-sm font-medium transition
+      ${route===key?'text-brand-800 bg-brand-50':'text-slate-500 hover:text-brand-700 hover:bg-brand-50/60'}`}>
+      {label}
+      {badge>0 && <span className="ml-1.5 text-[10px] font-bold bg-brand-600 text-white rounded-full px-1.5 py-0.5">{badge}</span>}
+    </button>
+  );
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-slate-100">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <button onClick={()=>go(user?'events':'landing')}><Logo/></button>
+        {user ? (
+          <>
+            <nav className="hidden md:flex items-center gap-1">
+              {link('events','Events')}
+              {link('registrations','My Registrations',regCount)}
+              {link('checkin','Check-in')}
+            </nav>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 text-sm">
+                <span className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-semibold">{user.name[0]}</span>
+                <span className="text-slate-600 font-medium">{user.name.split(' ')[0]}</span>
+              </div>
+              <Btn variant="ghost" size="sm" onClick={logout}><Icon.logout size={16}/><span className="hidden sm:inline">Log out</span></Btn>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Btn variant="ghost" size="sm" onClick={()=>go('login')}>Log in</Btn>
+            <Btn size="sm" onClick={()=>go('signup')}>Sign up</Btn>
+          </div>
+        )}
+      </div>
+      {user && (
+        <nav className="md:hidden flex items-center gap-1 px-3 pb-2 -mt-1 overflow-x-auto">
+          {link('events','Events')}{link('registrations','Registrations',regCount)}{link('checkin','Check-in')}
+        </nav>
+      )}
+    </header>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Landing
+ * ----------------------------------------------------------------------- */
+const Landing = ({go}) => (
+  <div className="route-enter">
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-10">
+      <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-brand-700 bg-brand-100 rounded-full px-3 py-1">
+            <Icon.spark size={14}/> Built for verified students
+          </span>
+          <h1 className="mt-5 font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.05] text-brand-900">
+            Every campus event, <span className="text-brand-500">in one place.</span>
+          </h1>
+          <p className="mt-5 text-lg text-slate-600 max-w-md">
+            Discover what's happening on campus, register in seconds, check in with a QR code, and collect your attendance certificate — all from your phone.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Btn size="lg" onClick={()=>go('signup')}>Get started <Icon.arrow size={18}/></Btn>
+            <Btn size="lg" variant="outline" onClick={()=>go('login')}>I already have an account</Btn>
+          </div>
+          <div className="mt-8 flex items-center gap-6 text-sm text-slate-500">
+            <span className="flex items-center gap-2"><Icon.shield size={16} cls="text-brand-500"/> University email only</span>
+            <span className="flex items-center gap-2"><Icon.award size={16} cls="text-gold-500"/> Verified certificates</span>
+          </div>
+        </div>
+        {/* hero preview card */}
+        <div className="relative">
+          <div className="absolute -inset-6 bg-gradient-to-tr from-brand-100 to-transparent rounded-[2rem] blur-2xl"/>
+          <div className="relative animate-floaty">
+            <div className="bg-white rounded-3xl shadow-lift border border-slate-100 p-5 max-w-sm mx-auto">
+              <div className="flex items-center justify-between">
+                <Pill cat="Technology"/>
+                <span className="text-2xl">🤖</span>
+              </div>
+              <h3 className="mt-3 font-display font-bold text-lg text-slate-800">AI & Robotics Summit</h3>
+              <div className="mt-2 space-y-1.5 text-sm text-slate-500">
+                <div className="flex items-center gap-2"><Icon.calendar size={15}/> {fmtDate(addDays(6))} · 10:00 AM</div>
+                <div className="flex items-center gap-2"><Icon.pin size={15}/> Engineering — Auditorium A</div>
+              </div>
+              <div className="mt-3"><Seats taken={84} total={120}/></div>
+              <Btn className="w-full mt-4" onClick={()=>go('signup')}>Register</Btn>
+            </div>
+            <div className="absolute -bottom-6 -left-4 bg-white rounded-2xl shadow-lift border border-slate-100 px-4 py-3 flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 grid place-items-center"><Icon.check/></span>
+              <div className="text-sm"><div className="font-semibold text-slate-700">Attendance confirmed</div><div className="text-slate-400 text-xs">Certificate ready</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {/* how it works */}
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {i:<Icon.search/>,t:'Discover',d:'Browse and filter every upcoming campus event.'},
+          {i:<Icon.ticket/>,t:'Register',d:'Reserve your seat online in one tap.'},
+          {i:<Icon.qr/>,t:'Check in',d:'Scan the event QR code at the door.'},
+          {i:<Icon.award/>,t:'Get certified',d:'Download your attendance certificate.'},
+        ].map((s,n)=>(
+          <div key={n} className="bg-white/70 border border-slate-100 rounded-2xl p-5 shadow-soft">
+            <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 grid place-items-center">{s.i}</div>
+            <div className="mt-3 font-display font-semibold text-slate-800">{s.t}</div>
+            <p className="mt-1 text-sm text-slate-500">{s.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+);
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Sign up
+ * ----------------------------------------------------------------------- */
+const AuthShell = ({title, sub, children, go, foot}) => (
+  <div className="route-enter max-w-md mx-auto px-4 sm:px-6 py-10 sm:py-16">
+    <div className="bg-white rounded-3xl shadow-soft border border-slate-100 p-7 sm:p-9">
+      <h2 className="font-display font-bold text-2xl text-brand-900">{title}</h2>
+      <p className="mt-1.5 text-slate-500">{sub}</p>
+      <div className="mt-6">{children}</div>
+    </div>
+    {foot}
+  </div>
+);
+ 
+const SignUp = ({go, onSignup, toast}) => {
+  const [f,setF] = useState({name:'',email:'',pw:''});
+  const [touched,setTouched] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const [done,setDone] = useState(false);
+  const set = k => e => setF({...f,[k]:e.target.value});
+  const emailOk = isUniEmail(f.email);
+  const errs = {
+    name: touched && f.name.trim().length<2 ? 'Enter your full name' : '',
+    email: touched && !emailOk ? 'Use your university email (must end in .edu or .ac)' : '',
+    pw: touched && f.pw.length<6 ? 'At least 6 characters' : '',
+  };
+  const submit = () => {
+    setTouched(true);
+    if (f.name.trim().length<2 || !emailOk || f.pw.length<6) return;
+    setLoading(true);
+    setTimeout(()=>{ setLoading(false); setDone(true); onSignup(f.name.trim(), f.email.trim()); }, 1100);
+  };
+  if (done) return (
+    <AuthShell title="Check your inbox" sub="One quick step to verify you're a student.">
+      <div className="text-center py-3">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-500 grid place-items-center animate-pop"><Icon.mail size={30}/></div>
+        <p className="mt-5 text-slate-600">We sent a verification link to</p>
+        <p className="font-semibold text-brand-800">{f.email}</p>
+        <p className="mt-2 text-sm text-slate-400">Open it to activate your account. For this prototype, you can continue straight to login.</p>
+        <Btn className="w-full mt-6" onClick={()=>go('login')}>Continue to log in <Icon.arrow size={18}/></Btn>
+      </div>
+    </AuthShell>
+  );
+  return (
+    <AuthShell title="Create your account" sub="Sign up with your university email to get started."
+      foot={<p className="text-center text-sm text-slate-500 mt-5">Already a member? <button onClick={()=>go('login')} className="text-brand-700 font-semibold hover:underline">Log in</button></p>}>
+      <div className="space-y-4">
+        <Field label="Full name" icon={<Icon.user size={18}/>} placeholder="Sara Al-Otaibi"
+          value={f.name} onChange={set('name')} error={errs.name}/>
+        <Field label="University email" icon={<Icon.mail size={18}/>} placeholder="sara@university.edu" type="email"
+          value={f.email} onChange={set('email')} error={errs.email} ok={emailOk}
+          hint={!errs.email && 'We only accept verified university addresses.'}/>
+        <Field label="Password" icon={<Icon.lock size={18}/>} placeholder="••••••••" type="password"
+          value={f.pw} onChange={set('pw')} error={errs.pw}/>
+        <Btn className="w-full" size="lg" onClick={submit} loading={loading}>Create account</Btn>
+      </div>
+    </AuthShell>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Login (with inline forgot-password)
+ * ----------------------------------------------------------------------- */
+const Login = ({go, onLogin}) => {
+  const [f,setF] = useState({email:'',pw:''});
+  const [touched,setTouched] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const [mode,setMode] = useState('login'); // login | forgot | sent
+  const set = k => e => setF({...f,[k]:e.target.value});
+  const emailOk = validEmail(f.email);
+  const submit = () => {
+    setTouched(true);
+    if (!emailOk || f.pw.length<1) return;
+    setLoading(true);
+    setTimeout(()=>{ setLoading(false); onLogin(f.email.trim()); }, 900);
+  };
+  const sendReset = () => { if(!emailOk) {setTouched(true);return;} setMode('sent'); };
+ 
+  if (mode==='forgot' || mode==='sent') return (
+    <AuthShell title="Reset your password" sub="We'll email you a secure reset link.">
+      {mode==='sent' ? (
+        <div className="text-center py-3">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center animate-pop"><Icon.mail size={30}/></div>
+          <p className="mt-5 text-slate-600">If an account exists for</p>
+          <p className="font-semibold text-brand-800">{f.email}</p>
+          <p className="mt-2 text-sm text-slate-400">you'll get a reset link shortly. The link expires in 30 minutes.</p>
+          <Btn className="w-full mt-6" onClick={()=>setMode('login')}><Icon.back size={18}/> Back to log in</Btn>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Field label="University email" icon={<Icon.mail size={18}/>} placeholder="you@university.edu" type="email"
+            value={f.email} onChange={set('email')} error={touched&&!emailOk?'Enter a valid email':''}/>
+          <Btn className="w-full" size="lg" onClick={sendReset}>Send reset link</Btn>
+          <button onClick={()=>setMode('login')} className="w-full text-sm text-slate-500 hover:text-brand-700">Back to log in</button>
+        </div>
+      )}
+    </AuthShell>
+  );
+ 
+  return (
+    <AuthShell title="Welcome back" sub="Log in to manage your events and certificates."
+      foot={<p className="text-center text-sm text-slate-500 mt-5">New here? <button onClick={()=>go('signup')} className="text-brand-700 font-semibold hover:underline">Create an account</button></p>}>
+      <div className="space-y-4">
+        <Field label="University email" icon={<Icon.mail size={18}/>} placeholder="you@university.edu" type="email"
+          value={f.email} onChange={set('email')} error={touched&&!emailOk?'Enter a valid email':''}/>
+        <div>
+          <Field label="Password" icon={<Icon.lock size={18}/>} placeholder="••••••••" type="password"
+            value={f.pw} onChange={set('pw')} error={touched&&f.pw.length<1?'Enter your password':''}/>
+          <button onClick={()=>setMode('forgot')} className="mt-2 text-sm text-brand-700 hover:underline float-right">Forgot password?</button>
+        </div>
+        <Btn className="w-full clear-both" size="lg" onClick={submit} loading={loading}>Log in</Btn>
+        <p className="text-xs text-center text-slate-400">Prototype: any university email and password will sign you in.</p>
+      </div>
+    </AuthShell>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Events listing (search + filters)
+ * ----------------------------------------------------------------------- */
+const EventCard = ({ev, registered, onOpen, onRegister}) => {
+  const left = ev.total-ev.taken; const full = left<=0;
+  return (
+    <div className="group bg-white rounded-2xl border border-slate-100 shadow-soft hover:shadow-lift transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col">
+      <div className="h-24 bg-gradient-to-br from-brand-50 to-brand-100 relative grid place-items-center">
+        <span className="text-4xl">{ev.emoji}</span>
+        <div className="absolute top-3 left-3"><Pill cat={ev.cat}/></div>
+        {registered && <div className="absolute top-3 right-3 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-1 flex items-center gap-1"><Icon.check size={12}/> Registered</div>}
+      </div>
+      <div className="p-5 flex flex-col flex-1">
+        <button onClick={onOpen} className="text-left">
+          <h3 className="font-display font-bold text-[17px] text-slate-800 group-hover:text-brand-700 transition">{ev.title}</h3>
+        </button>
+        <div className="mt-2.5 space-y-1.5 text-sm text-slate-500">
+          <div className="flex items-center gap-2"><Icon.calendar size={15}/> {fmtDate(ev.date)} · {ev.time}</div>
+          <div className="flex items-center gap-2"><Icon.pin size={15}/> <span className="truncate">{ev.loc}</span></div>
+        </div>
+        <div className="mt-3.5"><Seats taken={ev.taken} total={ev.total}/></div>
+        <div className="mt-4 flex gap-2 pt-1">
+          <Btn variant="outline" size="sm" className="flex-1" onClick={onOpen}>Details</Btn>
+          {registered
+            ? <Btn variant="soft" size="sm" className="flex-1" onClick={onOpen}>View</Btn>
+            : <Btn size="sm" className="flex-1" disabled={full} onClick={onRegister}>{full?'Full':'Register'}</Btn>}
+        </div>
+      </div>
+    </div>
+  );
+};
+ 
+const Events = ({events, isReg, go, register}) => {
+  const [q,setQ] = useState('');
+  const [cat,setCat] = useState('All');
+  const [when,setWhen] = useState('All');
+  const list = useMemo(()=>events.filter(e=>{
+    const mq = (e.title+' '+e.desc+' '+e.cat).toLowerCase().includes(q.toLowerCase());
+    const mc = cat==='All' || e.cat===cat;
+    const days = Math.ceil((e.date - today)/86400000);
+    const mw = when==='All' || (when==='Week'&&days<=7) || (when==='Month'&&days<=31);
+    return mq && mc && mw;
+  }),[events,q,cat,when]);
+ 
+  return (
+    <div className="route-enter max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display font-extrabold text-3xl text-brand-900">Discover events</h1>
+          <p className="mt-1 text-slate-500">{list.length} upcoming {list.length===1?'event':'events'} on campus</p>
+        </div>
+      </div>
+ 
+      {/* controls */}
+      <div className="mt-6 bg-white rounded-2xl border border-slate-100 shadow-soft p-3 sm:p-4 flex flex-col lg:flex-row gap-3">
+        <div className="relative flex-1">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Icon.search size={18}/></span>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search events, topics, categories…"
+            className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none"/>
+        </div>
+        <div className="flex gap-3">
+          <select value={cat} onChange={e=>setCat(e.target.value)}
+            className="px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none">
+            <option value="All">All categories</option>
+            {CATS.map(c=><option key={c}>{c}</option>)}
+          </select>
+          <div className="flex bg-slate-100 rounded-xl p-1">
+            {[['All','All'],['Week','This week'],['Month','This month']].map(([v,l])=>(
+              <button key={v} onClick={()=>setWhen(v)}
+                className={`px-3.5 py-2 text-sm rounded-lg font-medium transition ${when===v?'bg-white text-brand-700 shadow-soft':'text-slate-500'}`}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+ 
+      {/* grid / empty */}
+      {list.length===0 ? (
+        <div className="mt-16 text-center">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 grid place-items-center"><Icon.search size={28}/></div>
+          <h3 className="mt-4 font-display font-semibold text-lg text-slate-700">No events match your search</h3>
+          <p className="mt-1 text-slate-500">Try a different keyword or clear your filters.</p>
+          <Btn variant="soft" className="mt-4" onClick={()=>{setQ('');setCat('All');setWhen('All');}}>Clear filters</Btn>
+        </div>
+      ) : (
+        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {list.map(ev=>(
+            <EventCard key={ev.id} ev={ev} registered={isReg(ev.id)}
+              onOpen={()=>go('details',{id:ev.id})} onRegister={()=>register(ev.id)}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Event details
+ * ----------------------------------------------------------------------- */
+const EventDetails = ({ev, registered, go, register}) => {
+  const [justReg,setJustReg] = useState(false);
+  const left = ev.total-ev.taken; const full = left<=0 && !registered;
+  const doRegister = () => { register(ev.id); setJustReg(true); };
+  return (
+    <div className="route-enter max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <button onClick={()=>go('events')} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-brand-700"><Icon.back size={16}/> Back to events</button>
+      <div className="mt-4 bg-white rounded-3xl border border-slate-100 shadow-soft overflow-hidden">
+        <div className="h-40 sm:h-52 bg-gradient-to-br from-brand-100 via-brand-50 to-white relative grid place-items-center">
+          <span className="text-6xl sm:text-7xl">{ev.emoji}</span>
+          <div className="absolute top-4 left-4"><Pill cat={ev.cat}/></div>
+        </div>
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-brand-900">{ev.title}</h1>
+              <div className="mt-3 grid sm:grid-cols-2 gap-x-8 gap-y-2 text-slate-600">
+                <div className="flex items-center gap-2"><Icon.calendar size={17} cls="text-brand-500"/> {fmtLong(ev.date)}</div>
+                <div className="flex items-center gap-2"><Icon.clock size={17} cls="text-brand-500"/> {ev.time}</div>
+                <div className="flex items-center gap-2"><Icon.pin size={17} cls="text-brand-500"/> {ev.loc}</div>
+                <div className="flex items-center gap-2"><Icon.users size={17} cls="text-brand-500"/> Capacity {ev.total}</div>
+              </div>
+            </div>
+          </div>
+ 
+          <p className="mt-6 text-slate-600 leading-relaxed">{ev.desc}</p>
+ 
+          <div className="mt-6 max-w-xs"><Seats taken={ev.taken} total={ev.total}/></div>
+ 
+          {justReg ? (
+            <div className="mt-6 route-enter rounded-2xl bg-emerald-50 border border-emerald-100 p-5 flex items-start gap-4">
+              <span className="w-11 h-11 rounded-xl bg-emerald-500 text-white grid place-items-center animate-pop"><Icon.check size={22}/></span>
+              <div className="flex-1">
+                <div className="font-display font-semibold text-emerald-800">You're registered!</div>
+                <p className="text-sm text-emerald-700/80">We saved your seat. You can check in with the event QR code on the day.</p>
+                <div className="mt-3 flex gap-2">
+                  <Btn size="sm" onClick={()=>go('registrations')}>My registrations</Btn>
+                  <Btn size="sm" variant="outline" onClick={()=>go('events')}>Keep browsing</Btn>
+                </div>
+              </div>
+            </div>
+          ) : registered ? (
+            <div className="mt-6 flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-2 text-emerald-700 bg-emerald-100 rounded-xl px-4 py-2.5 text-sm font-semibold"><Icon.check size={16}/> You're registered</span>
+              <Btn variant="outline" onClick={()=>go('checkin',{id:ev.id})}><Icon.qr size={18}/> Check in</Btn>
+            </div>
+          ) : (
+            <div className="mt-6">
+              <Btn size="lg" disabled={full} onClick={doRegister}>{full?'Fully booked':'Register for this event'} {!full && <Icon.arrow size={18}/>}</Btn>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — My registrations
+ * ----------------------------------------------------------------------- */
+const Registrations = ({regs, eventById, go, cancel}) => {
+  const [confirm,setConfirm] = useState(null);
+  if (regs.length===0) return (
+    <div className="route-enter max-w-3xl mx-auto px-4 sm:px-6 py-16 text-center">
+      <div className="mx-auto w-16 h-16 rounded-2xl bg-brand-50 text-brand-500 grid place-items-center"><Icon.ticket size={28}/></div>
+      <h2 className="mt-4 font-display font-bold text-xl text-brand-900">No registrations yet</h2>
+      <p className="mt-1 text-slate-500">When you register for an event, it shows up here so you can check in later.</p>
+      <Btn className="mt-5" onClick={()=>go('events')}>Browse events <Icon.arrow size={18}/></Btn>
+    </div>
+  );
+  return (
+    <div className="route-enter max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="font-display font-extrabold text-3xl text-brand-900">My registrations</h1>
+      <p className="mt-1 text-slate-500">{regs.length} {regs.length===1?'event':'events'} saved</p>
+      <div className="mt-6 space-y-4">
+        {regs.map(r=>{
+          const ev = eventById(r.eventId); if(!ev) return null;
+          return (
+            <div key={r.eventId} className="bg-white rounded-2xl border border-slate-100 shadow-soft p-4 sm:p-5">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 grid place-items-center text-2xl shrink-0">{ev.emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-bold text-slate-800">{ev.title}</h3>
+                    {r.checkedIn && <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 flex items-center gap-1"><Icon.check size={11}/> Attended</span>}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+                    <span className="flex items-center gap-1.5"><Icon.calendar size={14}/> {fmtDate(ev.date)} · {ev.time}</span>
+                    <span className="flex items-center gap-1.5"><Icon.pin size={14}/> {ev.loc}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {r.checkedIn
+                      ? <Btn size="sm" variant="gold" onClick={()=>go('certificate',{id:ev.id})}><Icon.award size={16}/> View certificate</Btn>
+                      : <Btn size="sm" onClick={()=>go('checkin',{id:ev.id})}><Icon.qr size={16}/> Check in</Btn>}
+                    <Btn size="sm" variant="ghost" onClick={()=>go('details',{id:ev.id})}>Details</Btn>
+                    {!r.checkedIn && <Btn size="sm" variant="danger" onClick={()=>setConfirm(ev.id)}><Icon.trash size={15}/> Cancel</Btn>}
+                  </div>
+                </div>
+              </div>
+ 
+              {confirm===ev.id && (
+                <div className="mt-4 route-enter rounded-xl bg-rose-50 border border-rose-100 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-rose-700">Cancel your registration for <b>{ev.title}</b>? Your seat will be released.</p>
+                  <div className="flex gap-2">
+                    <Btn size="sm" variant="ghost" onClick={()=>setConfirm(null)}>Keep it</Btn>
+                    <Btn size="sm" variant="danger" onClick={()=>{cancel(ev.id);setConfirm(null);}}>Yes, cancel</Btn>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — QR check-in
+ * ----------------------------------------------------------------------- */
+const QRArt = () => (
+  <svg viewBox="0 0 100 100" className="w-40 h-40 opacity-90">
+    <rect width="100" height="100" rx="8" fill="#fff"/>
+    {[[8,8],[8,64],[64,8]].map(([x,y],i)=>(
+      <g key={i}><rect x={x} y={y} width="28" height="28" rx="4" fill="none" stroke="#16486B" strokeWidth="6"/>
+        <rect x={x+10} y={y+10} width="8" height="8" rx="2" fill="#16486B"/></g>
+    ))}
+    {Array.from({length:36}).map((_,i)=>{
+      const x=44+(i%6)*9, y=44+Math.floor(i/6)*9;
+      return Math.random()>0.45 ? <rect key={i} x={x} y={y} width="7" height="7" rx="1.5" fill="#2E7DA8"/> : null;
+    })}
+    <rect x="44" y="8" width="7" height="7" fill="#2E7DA8"/><rect x="62" y="44" width="7" height="7" fill="#2E7DA8"/>
+  </svg>
+);
+ 
+const CheckIn = ({regs, eventById, paramId, go, confirmAttendance}) => {
+  const pending = regs.filter(r=>!r.checkedIn);
+  const [sel,setSel] = useState(paramId || (pending[0]&&pending[0].eventId) || '');
+  const [phase,setPhase] = useState('idle'); // idle | scanning | done
+  const ev = eventById(sel);
+ 
+  useEffect(()=>{ if(paramId) setSel(paramId); },[paramId]);
+ 
+  if (pending.length===0) return (
+    <div className="route-enter max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
+      <div className="mx-auto w-16 h-16 rounded-2xl bg-brand-50 text-brand-500 grid place-items-center"><Icon.qr size={28}/></div>
+      <h2 className="mt-4 font-display font-bold text-xl text-brand-900">Nothing to check in to</h2>
+      <p className="mt-1 text-slate-500">Register for an event first — then check in with its QR code here.</p>
+      <Btn className="mt-5" onClick={()=>go('events')}>Browse events <Icon.arrow size={18}/></Btn>
+    </div>
+  );
+ 
+  const scan = () => {
+    setPhase('scanning');
+    setTimeout(()=>{ setPhase('done'); confirmAttendance(sel); }, 1700);
+  };
+ 
+  return (
+    <div className="route-enter max-w-2xl mx-auto px-4 sm:px-6 py-8">
+      <h1 className="font-display font-extrabold text-3xl text-brand-900">Event check-in</h1>
+      <p className="mt-1 text-slate-500">Scan the QR code displayed at the event entrance to confirm your attendance.</p>
+ 
+      {pending.length>1 && phase==='idle' && (
+        <div className="mt-5 max-w-sm">
+          <label className="text-sm font-medium text-slate-700">Which event?</label>
+          <select value={sel} onChange={e=>setSel(e.target.value)}
+            className="mt-1.5 w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-brand-400 focus:ring-4 focus:ring-brand-100 outline-none">
+            {pending.map(r=>{const e=eventById(r.eventId);return <option key={r.eventId} value={r.eventId}>{e.title}</option>;})}
+          </select>
+        </div>
+      )}
+ 
+      <div className="mt-6 bg-white rounded-3xl border border-slate-100 shadow-soft p-6 sm:p-8">
+        {ev && <div className="text-center mb-5"><span className="text-sm text-slate-400">Checking in to</span>
+          <div className="font-display font-bold text-lg text-slate-800">{ev.title}</div></div>}
+ 
+        {/* scanner */}
+        <div className="mx-auto w-64 max-w-full aspect-square rounded-2xl bg-gradient-to-br from-brand-900 to-brand-700 p-5 relative overflow-hidden">
+          {/* corner brackets */}
+          {['top-3 left-3 border-t-2 border-l-2','top-3 right-3 border-t-2 border-r-2','bottom-3 left-3 border-b-2 border-l-2','bottom-3 right-3 border-b-2 border-r-2'].map((c,i)=>(
+            <span key={i} className={`absolute ${c} w-8 h-8 border-white/80 rounded-sm`}/>
+          ))}
+          <div className="w-full h-full grid place-items-center">
+            {phase==='done'
+              ? <span className="w-24 h-24 rounded-full bg-emerald-500 text-white grid place-items-center animate-pop shadow-lift"><Icon.check size={52}/></span>
+              : <div className="relative"><div className="bg-white rounded-xl p-2"><QRArt/></div>
+                  {phase==='scanning' && <span className="absolute left-0 right-0 h-0.5 bg-emerald-400 shadow-[0_0_12px_2px_rgba(52,211,153,.8)] animate-scanline"/>}
+                </div>}
+          </div>
+          {phase==='scanning' && <div className="absolute inset-x-0 bottom-3 text-center text-white/80 text-sm">Scanning…</div>}
+        </div>
+ 
+        <div className="mt-7 text-center">
+          {phase==='idle' && <Btn size="lg" onClick={scan}><Icon.qr size={18}/> Simulate QR scan</Btn>}
+          {phase==='scanning' && <Btn size="lg" loading disabled>Verifying attendance</Btn>}
+          {phase==='done' && (
+            <div className="route-enter">
+              <div className="font-display font-bold text-xl text-emerald-700">Attendance confirmed</div>
+              <p className="text-slate-500 mt-1">Your certificate is ready.</p>
+              <Btn size="lg" variant="gold" className="mt-4" onClick={()=>go('certificate',{id:sel})}><Icon.award size={18}/> Get my certificate</Btn>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Screen — Certificate
+ * ----------------------------------------------------------------------- */
+const Certificate = ({user, ev, reg, go, toast}) => {
+  const ref = useRef(null);
+  const [dl,setDl] = useState(false);
+  const id = reg?.certId || 'UEH-PREVIEW';
+ 
+  // light confetti on mount
+  useEffect(()=>{
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = document.createElement('canvas');
+    Object.assign(c.style,{position:'fixed',inset:0,pointerEvents:'none',zIndex:60});
+    c.width=innerWidth; c.height=innerHeight; document.body.appendChild(c);
+    const ctx=c.getContext('2d'); const cols=['#D6A24A','#2E7DA8','#16486B','#E8C078','#5BA0C8'];
+    let P=Array.from({length:120},()=>({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight/3,
+      vx:(Math.random()-.5)*8,vy:Math.random()*-9-3,g:.28,r:Math.random()*6+3,
+      c:cols[Math.random()*cols.length|0],a:1,rot:Math.random()*6}));
+    let t=0,raf;
+    (function loop(){ ctx.clearRect(0,0,c.width,c.height); t++;
+      P.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=.1;p.a-=.008;
+        ctx.save();ctx.globalAlpha=Math.max(p.a,0);ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+        ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);ctx.restore();});
+      if(t<140) raf=requestAnimationFrame(loop); else c.remove();
+    })();
+    return ()=>{ cancelAnimationFrame(raf); c.remove(); };
+  },[]);
+ 
+  const download = async () => {
+    if (!window.html2canvas) { window.print(); return; }
+    setDl(true);
+    try {
+      const canvas = await window.html2canvas(ref.current, {scale:2, backgroundColor:'#ffffff', logging:false});
+      const a=document.createElement('a'); a.download=`Certificate_${id}.png`; a.href=canvas.toDataURL('image/png'); a.click();
+      toast('Certificate downloaded');
+    } catch(e){ window.print(); }
+    setDl(false);
+  };
+ 
+  if (!ev || !user) return null;
+  return (
+    <div className="route-enter max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <button onClick={()=>go('registrations')} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-brand-700"><Icon.back size={16}/> My registrations</button>
+        <Btn variant="gold" onClick={download} loading={dl}><Icon.download size={18}/> Download certificate</Btn>
+      </div>
+ 
+      {/* certificate */}
+      <div ref={ref} className="mt-5 relative bg-white rounded-2xl overflow-hidden shadow-lift">
+        <div className="m-3 sm:m-4 border-2 border-gold-400 rounded-xl">
+          <div className="m-1 border border-gold-400/60 rounded-lg p-7 sm:p-10 text-center relative bg-gradient-to-b from-white to-brand-50/40">
+            {/* watermark seal */}
+            <div className="pointer-events-none absolute inset-0 grid place-items-center opacity-[0.05]">
+              <Icon.cap size={260}/>
+            </div>
+            <div className="relative">
+              <div className="flex items-center justify-center gap-2 text-brand-700">
+                <Icon.cap size={26}/><span className="font-display font-bold tracking-wide">UNIVERSITY EVENTS HUB</span>
+              </div>
+              <div className="mt-6 text-[11px] tracking-[0.35em] text-gold-600 font-semibold">CERTIFICATE OF ATTENDANCE</div>
+              <div className="mt-1 mx-auto w-16 h-0.5 bg-gold-400 rounded-full"/>
+ 
+              <p className="mt-7 text-slate-500">This certificate is proudly presented to</p>
+              <h2 className="mt-2 font-serif font-bold text-3xl sm:text-4xl text-brand-900">{user.name}</h2>
+ 
+              <p className="mt-5 text-slate-500">for attending</p>
+              <h3 className="mt-1 font-display font-bold text-xl text-brand-700">{ev.title}</h3>
+              <p className="mt-1 text-slate-500 text-sm flex items-center justify-center gap-2">
+                <Icon.calendar size={14}/> {fmtLong(ev.date)} &nbsp;·&nbsp; <Icon.pin size={14}/> {ev.loc}
+              </p>
+ 
+              {/* seal */}
+              <div className="mt-7 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 grid place-items-center text-white shadow-soft animate-pop">
+                  <Icon.award size={30}/>
+                </div>
+              </div>
+ 
+              <div className="mt-7 flex items-end justify-between gap-4 text-left">
+                <div className="text-xs text-slate-400">
+                  <div className="font-mono text-slate-500">{id}</div>
+                  <div className="mt-0.5 flex items-center gap-1"><Icon.shield size={12} cls="text-brand-400"/> Verified by University Events Hub</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-serif italic text-brand-800 text-lg leading-none">Student Affairs</div>
+                  <div className="mt-1 border-t border-slate-300 pt-1 text-[10px] tracking-wide text-slate-400 uppercase">Authorized signature</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <div className="mt-5 flex flex-wrap gap-3 justify-center">
+        <Btn variant="outline" onClick={()=>go('events')}>Browse more events</Btn>
+        <Btn variant="ghost" onClick={()=>go('registrations')}>Back to my registrations</Btn>
+      </div>
+    </div>
+  );
+};
+ 
+/* ----------------------------------------------------------------------- *
+ *  Root App — state + routing
+ * ----------------------------------------------------------------------- */
+function App(){
+  const [route,setRoute] = useState('landing');
+  const [params,setParams] = useState({});
+  const [user,setUser] = useState(null);
+  const [accounts,setAccounts] = useState({});            // email -> name
+  const [events,setEvents] = useState(()=>SEED.map(e=>({...e, date:addDays(e.off)})));
+  const [regs,setRegs] = useState([]);                    // {eventId, checkedIn, certId, at}
+  const [toasts,setToasts] = useState([]);
+ 
+  const go = (r,p={}) => { setRoute(r); setParams(p); window.scrollTo({top:0,behavior:'auto'}); };
+  const toast = (msg,tone='ok') => {
+    const id=Math.random().toString(36).slice(2);
+    setToasts(t=>[...t,{id,msg,tone}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3200);
+  };
+  const dismiss = id => setToasts(t=>t.filter(x=>x.id!==id));
+ 
+  const eventById = id => events.find(e=>e.id===id);
+  const isReg = id => regs.some(r=>r.eventId===id);
+ 
+  const onSignup = (name,email) => setAccounts(a=>({...a,[email]:name}));
+  const onLogin = email => {
+    const name = accounts[email] || nameFromEmail(email);
+    setUser({name,email}); go('events'); toast(`Welcome, ${name.split(' ')[0]}!`);
+  };
+  const logout = () => { setUser(null); setRegs([]); go('landing'); };
+ 
+  const register = id => {
+    const ev = eventById(id); if(!ev) return;
+    if (isReg(id)) { toast('You are already registered'); return; }
+    if (ev.total-ev.taken<=0) { toast('This event is fully booked','error'); return; }
+    setEvents(es=>es.map(e=>e.id===id?{...e,taken:e.taken+1}:e));
+    setRegs(r=>[...r,{eventId:id,checkedIn:false,certId:null,at:Date.now()}]);
+    toast(`Registered for ${ev.title}`);
+  };
+  const cancel = id => {
+    setEvents(es=>es.map(e=>e.id===id?{...e,taken:Math.max(e.taken-1,0)}:e));
+    setRegs(r=>r.filter(x=>x.eventId!==id));
+    toast('Registration cancelled');
+  };
+  const confirmAttendance = id => {
+    setRegs(r=>r.map(x=>x.eventId===id?{...x,checkedIn:true,certId:x.certId||certId()}:x));
+  };
+ 
+  const regSorted = useMemo(()=>[...regs].sort((a,b)=>a.at-b.at),[regs]);
+ 
+  let screen;
+  if (!user) {
+    screen = route==='signup' ? <SignUp go={go} onSignup={onSignup} toast={toast}/>
+           : route==='login'  ? <Login go={go} onLogin={onLogin}/>
+           : <Landing go={go}/>;
+  } else {
+    switch(route){
+      case 'details': screen=<EventDetails ev={eventById(params.id)} registered={isReg(params.id)} go={go} register={register}/>; break;
+      case 'registrations': screen=<Registrations regs={regSorted} eventById={eventById} go={go} cancel={cancel}/>; break;
+      case 'checkin': screen=<CheckIn regs={regSorted} eventById={eventById} paramId={params.id} go={go} confirmAttendance={confirmAttendance}/>; break;
+      case 'certificate': screen=<Certificate user={user} ev={eventById(params.id)} reg={regs.find(r=>r.eventId===params.id)} go={go} toast={toast}/>; break;
+      default: screen=<Events events={events} isReg={isReg} go={go} register={register}/>;
+    }
+  }
+ 
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar user={user} route={route} go={go} regCount={regs.length} logout={logout}/>
+      <main className="flex-1">{screen}</main>
+      <footer className="border-t border-slate-100 mt-8">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-400">
+          <Logo/>
+          <p>MVP prototype · Sprint 1 · Mock data only</p>
+        </div>
+      </footer>
+      <ToastHost toasts={toasts} dismiss={dismiss}/>
+    </div>
+  );
+}
+ 
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
