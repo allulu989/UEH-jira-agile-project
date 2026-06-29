@@ -1,284 +1,121 @@
-> A complete Agile Scrum project created in Jira to simulate a real-world software development lifecycle from Business Analysis through Sprint Planning, Quality Assurance, and Defect Tracking.
+# University Events Hub | Jira Agile Project
 
-![Jira](https://img.shields.io/badge/Jira-Software-blue?logo=jira)
-![Agile](https://img.shields.io/badge/Methodology-Agile-success)
-![Scrum](https://img.shields.io/badge/Framework-Scrum-orange)
-![Business%20Analysis](https://img.shields.io/badge/Role-Business%20Analysis-blueviolet)
-![QA](https://img.shields.io/badge/Quality-Assurance-red)
+A simulated software project created in **Jira Software** to demonstrate practical experience in **Business Analysis, Agile Scrum, Product Management, and Quality Assurance**.
+
+The project simulates a university event management platform where students can browse campus events, register online, receive reminders, check in using QR codes, and download attendance certificates.
 
 ---
 
-# 📌 Overview
+## Project Overview
 
-University Events Hub is a simulated software product designed to help university students discover campus events, register online, receive reminders, check in using QR codes, and automatically receive attendance certificates.
+The objective of this project was to simulate how a real Agile team plans, manages, and delivers a software product using Jira.
 
-The project was created to demonstrate practical experience using **Jira Software** while applying **Agile Scrum**, **Business Analysis**, **Product Management**, and **Quality Assurance** practices.
+The project includes:
 
-Rather than focusing on software development, this project focuses on how a real Agile team manages product requirements, sprint planning, testing, and issue tracking.
-
----
-
-# 🎯 Business Problem
-
-University students often receive event announcements through scattered communication channels such as emails, WhatsApp groups, and posters.
-
-This causes:
-
-- Missed events
-- Poor attendance
-- Manual registration
-- No reminder system
-- Manual certificate generation
-
-University Events Hub centralizes the entire journey into one platform.
+* Product Backlog
+* Epics
+* User Stories
+* Sub-tasks
+* Scrum Sprints
+* Test Cases
+* Bug Reports
+* Issue Linking
+* Story Point Estimation
+* Priority & Severity Management
 
 ---
 
-# 🚀 Product Goal
+## Scrum Delivery
 
-Create one platform where students can:
+The backlog was planned across two Scrum sprints.
 
-✅ Browse campus events
+**Sprint 1 – MVP**
 
-✅ Register online
+* User Registration & Login
+* Browse Events
+* Search Events
+* Event Registration
+* QR Check-in
+* Certificate Generation
 
-✅ Receive reminders
+**Sprint 2 – Enhancements**
 
-✅ Check in using QR codes
-
-✅ Download attendance certificates
-
----
-
-# 🛠 Tech & Methodology
-
-- Jira Software
-- Agile Methodology
-- Scrum Framework
-- Product Backlog
-- Sprint Planning
-- User Stories
-- Acceptance Criteria
-- Story Points
-- Test Cases
-- Bug Tracking
-- Priority & Severity Management
+* Profile Management
+* Notification Preferences
+* Event Reminders
+* Manual Attendance
+* Certificate Download
 
 ---
 
-# 📂 Project Structure
+## Project Structure
 
-```
-Project
-│
-├── Epic
-│     ├── Feature
-│     │      ├── User Story
-│     │      │       ├── Sub-task
-│     │      │       ├── Test Case
-│     │      │       └── Bug
+```text
+Epic
+└── User Story
+    ├── Sub-task
+    ├── Test Case
+    └── Bug
 ```
 
 ---
 
-# 📋 Epics
+## Repository Contents
 
-### 1. Account & Profile
+### Product Backlog
 
-- Student Registration
-- Login
-- Password Reset
-- Profile Management
+<img src="screenshots/01-product-backlog.png" width="900">
 
----
+### Sprint Board
 
-### 2. Event Discovery & Registration
+<img src="screenshots/02-sprint-board.png" width="900">
 
-- Browse Events
-- Search & Filter
-- Event Registration
-- Registration Management
+### Epic
 
----
+<img src="screenshots/03-epic.png" width="900">
 
-### 3. Notifications & Reminders
+### User Story
 
-- Event Reminder
-- Notification Center
-- Notification Preferences
+<img src="screenshots/04-user-story.png" width="900">
 
----
+### Test Case
 
-### 4. Attendance & Certificates
+<img src="screenshots/05-test-case.png" width="900">
 
-- QR Check-in
-- Manual Attendance
-- Certificate Generation
-- Certificate Download
+### Bug Report
+
+<img src="screenshots/06-bug.png" width="900">
 
 ---
 
-# 🏃 Scrum Implementation
+## Documentation
 
-The project follows Scrum using two 2-week sprints.
+This repository also includes supporting documentation:
 
-## Sprint 1 (MVP)
-
-Focused on delivering the complete end-to-end student journey.
-
-Included:
-
-- Sign Up
-- Login
-- Browse Events
-- Search Events
-- Register
-- QR Check-in
-- Certificate Generation
+* Project Scope
+* Agile Process Guide
 
 ---
 
-## Sprint 2
+## Skills Demonstrated
 
-Focused on enhancements.
-
-Included:
-
-- Profile Management
-- Notifications
-- Manual Attendance
-- Certificate Download
-
----
-
-# 🧪 Quality Assurance
-
-The project also demonstrates QA activities including:
-
-- Test Case creation
-- Defect reporting
-- Priority assignment
-- Severity classification
-- Traceability between Stories, Test Cases and Bugs
-
-Example traceability:
-
-```
-User Story
-
-↓
-
-Test Case
-
-↓
-
-Bug
-
-↓
-
-Fix
-
-↓
-
-Re-test
-```
+* Business Analysis
+* Agile Scrum
+* Jira Software
+* Product Backlog Management
+* Sprint Planning
+* User Story Writing
+* Acceptance Criteria
+* Story Point Estimation
+* Test Case Design
+* Bug Tracking
+* Issue Linking
+* Defect Management
 
 ---
 
-# 📸 Jira Screenshots
-
-## Product Backlog
-
-![Backlog](<img width="1408" height="881" alt="01-product-backlog" src="https://github.com/user-attachments/assets/2bfe7260-471c-484e-9d38-49ee3f91902c" />)
-
-
----
-
-## Sprint Board
-
-![Sprint Board](screenshots/02-sprint-board.png)
-
----
-
-## Epic Example
-
-![Epic](screenshots/03-epic.png)
-
----
-
-## User Story
-
-![Story](screenshots/04-user-story.png)
-
----
-
-## Test Case
-
-![Test Case](screenshots/05-test-case.png)
-
----
-
-## Bug Report
-
-![Bug](screenshots/06-bug.png)
-
----
-
-# 📄 Documentation
-
-This repository also includes supporting documentation created for the project.
-
-- Project Scope
-- Agile Process Guide
-
----
-
-# 💡 Skills Demonstrated
-
-Business Analysis
-
-- Requirements Gathering
-- User Story Writing
-- Acceptance Criteria
-- Functional Requirements
-- Non-functional Requirements
-
-Agile
-
-- Scrum
-- Sprint Planning
-- Product Backlog
-- Story Point Estimation
-
-Quality Assurance
-
-- Test Cases
-- Bug Reporting
-- Priority
-- Severity
-- Defect Lifecycle
-
-Jira
-
-- Epics
-- Stories
-- Sub-tasks
-- Issue Linking
-- Labels
-- Workflow Management
-
----
-
-# 📚 Learning Outcome
-
-Through this project I practiced how Business Analysts, Product Owners, Developers, and QA engineers collaborate using Jira throughout an Agile software development lifecycle.
-
-The project demonstrates practical experience with backlog management, sprint planning, requirement decomposition, issue tracking, testing, and defect management.
-
----
-
-## 👤 Author
+## Author
 
 **Allulu Alkheraiji**
 
-Business Analysis • Product Management • Quality Assurance
+Business Analyst | Product Management | Quality Assurance
